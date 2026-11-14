@@ -21,7 +21,7 @@
           <template v-if="isMentor">
             <!-- Waiting State -->
             <template v-if="!isClassLive && !isClassEnded">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning font-medium text-[11px]">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning font-medium text-[11px] border" style="border-color: var(--color-warning)">
                 <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
                 Waiting
               </span>
