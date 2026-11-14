@@ -21,7 +21,7 @@
           <template v-if="isMentor">
             <!-- Waiting State -->
             <template v-if="!isClassLive && !isClassEnded">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning border border-warning/40 font-medium text-[11px]">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning font-medium text-[11px]">
                 <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
                 Waiting
               </span>
@@ -276,13 +276,13 @@
                   </span>
                   <span
                     v-if="item.status === 'reconnecting'"
-                    class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-warning-soft text-warning border border-warning/40 shrink-0"
+                    class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-warning-soft text-warning shrink-0"
                   >
                     Reconnecting
                   </span>
                   <span
                     v-else-if="item.isHandRaised"
-                    class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-warning-soft text-warning border border-warning/40 shrink-0"
+                    class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-warning-soft text-warning shrink-0"
                   >
                     Hand raised
                   </span>
