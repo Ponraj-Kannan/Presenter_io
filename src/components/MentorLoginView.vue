@@ -3,7 +3,7 @@
     <div class="bg-card rounded-2xl p-6 sm:p-7 border border-border shadow-card">
 
       <!-- Icon -->
-      <div class="w-11 h-11 rounded-full bg-success-soft text-success flex items-center justify-center mb-4 border border-success/20">
+      <div class="w-11 h-11 rounded-full bg-success-soft text-success flex items-center justify-center mb-4">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
