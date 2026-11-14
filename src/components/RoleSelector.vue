@@ -17,7 +17,7 @@
         class="bg-card rounded-2xl p-5 md:p-6 border border-border hover:border-admin transition-all duration-200 flex flex-col items-center text-center cursor-pointer group text-left"
         :class="{ 'border-admin': selectedRole === 'admin' }"
       >
-        <div class="w-12 h-12 rounded-full bg-admin-soft text-admin border border-admin/20 flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform">
+        <div class="w-12 h-12 rounded-full bg-admin-soft text-admin flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>

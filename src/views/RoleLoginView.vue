@@ -166,7 +166,7 @@
           @click="selectRole('admin')"
           class="bg-card rounded-2xl p-5 md:p-6 border border-border hover:border-admin transition-all duration-200 flex flex-col items-center text-center cursor-pointer group"
         >
-          <div class="w-12 h-12 rounded-full bg-admin-soft text-admin flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform border border-admin/20">
+          <div class="w-12 h-12 rounded-full bg-admin-soft text-admin flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
@@ -185,7 +185,7 @@
           @click="selectRole('mentor')"
           class="bg-card rounded-2xl p-5 md:p-6 border border-border hover:border-accent transition-all duration-200 flex flex-col items-center text-center cursor-pointer group"
         >
-          <div class="w-12 h-12 rounded-full bg-success-soft text-success flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform border border-success/20">
+          <div class="w-12 h-12 rounded-full bg-success-soft text-success flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
@@ -204,7 +204,7 @@
           @click="selectRole('student')"
           class="bg-card rounded-2xl p-5 md:p-6 border border-border hover:border-accent transition-all duration-200 flex flex-col items-center text-center cursor-pointer group"
         >
-          <div class="w-12 h-12 rounded-full bg-accent-soft text-accent flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform border border-accent/20">
+          <div class="w-12 h-12 rounded-full bg-accent-soft text-accent flex items-center justify-center mb-3.5 group-hover:scale-105 transition-transform">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
@@ -246,9 +246,9 @@ function selectRole(role) {
 }
 
 function roleBadgeClasses(role) {
-  if (role === 'admin')  return 'bg-admin-soft text-admin border border-admin/20'
-  if (role === 'mentor') return 'bg-success-soft text-success border border-success/20'
-  return 'bg-accent-soft text-accent border border-accent/20'
+  if (role === 'admin')  return 'bg-admin-soft text-admin'
+  if (role === 'mentor') return 'bg-success-soft text-success'
+  return 'bg-accent-soft text-accent'
 }
 
 function capitalize(str) {
