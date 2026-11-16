@@ -138,7 +138,7 @@
               v-if="!isMentor && isClassLive && !isClassEnded && !isSummaryStep && totalTagSteps > 0"
               class="inline-flex items-center px-2 py-0.5 rounded-full bg-raised text-secondary border border-border font-medium text-[11px] tabular-nums"
             >
-              {{ currentStepIndex + 1 }} / {{ totalTagSteps }}
+              {{ currentStepIndex + 1 }} / {{ totalNavigableSteps }}
             </span>
           </template>
         </div>
@@ -171,24 +171,30 @@
 
         <!-- Active session content -->
         <template v-else>
-          <!-- Mentor OR interactive MCQ/result steps for students -->
+          <!-- Mentor OR interactive MCQ/result steps for students (JavaRunner uses this in watch/practice mode) -->
           <div
             v-show="!isStepMirroredForStudent"
             key="live-step-wrapper"
             ref="stepWrapperRef"
             :class="[
-              'flex-1 min-w-0 min-h-0 w-full p-2 sm:p-3 flex relative',
-              !isMentor && !(isPracticeStep && isPracticeUnlocked)
-                ? 'flex-col items-center overflow-y-auto'
-                : 'items-center justify-center overflow-y-auto md:overflow-hidden'
+              'flex-1 min-w-0 min-h-0 w-full flex relative',
+              isJavaRunnerStep && !isMentor
+                ? 'overflow-hidden'
+                : 'p-2 sm:p-3',
+              isJavaRunnerStep && !isMentor
+                ? ''
+                : (!isMentor && !(isPracticeStep && isPracticeUnlocked)
+                    ? 'flex-col items-center overflow-y-auto'
+                    : 'items-center justify-center overflow-y-auto md:overflow-hidden')
             ]"
           >
             <Navigator />
           </div>
 
-          <!-- Student view for all non-MCQ Vue steps: live read-only mirror of Mentor screen -->
+          <!-- Student view for all non-MCQ Vue steps: live read-only DOM mirror
+               (JavaRunner steps are rendered by StepFlow with mode='watch' or 'practice') -->
           <div
-            v-if="isStepMirroredForStudent"
+            v-if="isStepMirroredForStudent && !isJavaRunnerStep"
             key="mirror-step-wrapper"
             ref="mirrorWrapperRef"
             class="student-step-mirror flex-1 min-w-0 min-h-0 w-full p-2 sm:p-3 flex items-center justify-center overflow-y-auto md:overflow-hidden relative pointer-events-none select-none"
@@ -451,7 +457,8 @@
     <!-- Student Floating Raise Hand Button (fixed bottom-right, outside view-only & inert wrappers) -->
     <div
       v-if="!isMentor && !isClassEnded"
-      class="student-floating-hand fixed z-50 group inline-flex items-center"
+      class="fixed z-50 group inline-flex items-center"
+      :class="isJavaRunnerStep ? 'student-floating-hand-jr' : 'student-floating-hand'"
     >
       <button
         type="button"
@@ -812,6 +819,12 @@ const mirrorWrapperRef = ref(null)
 const mirroredSnapshotsByStep = ref({})
 const lastAcceptedMirrorByStep = new Map()
 
+// ── JavaRunner live-sync state (mentor → students) ────────────────────────────
+// Keyed by stepNumber so multiple JavaRunner steps work independently.
+const javarunnerStateByStep = ref({})
+// On mentor side: persisted latest payload so late-joining students get it via state-sync
+const javarunnerLatestByStep = ref({})
+
 // =========================================================================
 // DYNAMIC STEP METADATA FROM NAVIGATOR / STEPFLOW
 // =========================================================================
@@ -858,6 +871,10 @@ const isViewStep = computed(() => {
 const isStepMirroredForStudent = computed(() => {
   if (props.isMentor) return false
   if (!isViewStep.value) return false
+  // JavaRunner steps are always rendered by StepFlow (mode='watch' or 'practice')
+  // so they must NOT be treated as mirrored — the live-step-wrapper must stay visible
+  const meta = activeStepMeta.value
+  if (meta && meta.tagName && meta.tagName.toLowerCase() === 'javarunner') return false
   if (isPracticeStep.value && isPracticeUnlocked.value) {
     return false
   }
@@ -924,7 +941,19 @@ provide('stepFlowHost', {
   onStudentAnswer: handleStudentAnswer,
   onRevealAnswer: handleRevealAnswer,
   onNextStep: handleNextStep,
-  requestEndClass
+  requestEndClass,
+  // JavaRunner live-sync: mentor side calls this to cache latest state for state-sync
+  setJavaRunnerState(stepNumber, payload) {
+    if (!props.isMentor) return
+    javarunnerLatestByStep.value = {
+      ...javarunnerLatestByStep.value,
+      [stepNumber]: payload
+    }
+  },
+  // JavaRunner watch mode: student side reads this on mount for late-join initial state
+  getJavaRunnerState(stepNumber) {
+    return javarunnerStateByStep.value[stepNumber] || null
+  }
 })
 
 // =========================================================================
@@ -1014,7 +1043,8 @@ function buildRoomStatePayload() {
     removedStudentIds: removedStudentIds.value,
     ackSeqByStudent: ackSeqByStudent.value,
     syncedQuestionsByStep: syncedQuestionsByStep.value,
-    stepMirror
+    stepMirror,
+    javarunnerLatestByStep: props.isMentor ? javarunnerLatestByStep.value : undefined
   }
 }
 
@@ -1285,6 +1315,14 @@ function applySyncedRoomState(state, { fromInitialLoad = false } = {}) {
   }
   if (state.stepMirror && typeof state.stepMirror.stepIndex === 'number') {
     acceptMentorMirrorSnapshot(state.stepMirror)
+  }
+
+  // Restore JavaRunner latest state for late-joining students
+  if (state.javarunnerLatestByStep && typeof state.javarunnerLatestByStep === 'object') {
+    javarunnerStateByStep.value = {
+      ...state.javarunnerLatestByStep,
+      ...javarunnerStateByStep.value  // keep any fresher data received since
+    }
   }
 }
 
@@ -1952,6 +1990,34 @@ function initRealtime() {
     markStudentClassEnded(wasConnectionInterrupted)
   })
 
+  // ── JavaRunner live sync (mentor → students) ───────────────────────────────
+  // The mentor publishes 'javarunner-sync' on every code change and on Run.
+  // On mentor side: cache the payload so it can be included in state-sync for late joiners.
+  // Students now receive via their own JavaRunner.vue subscription (mode='watch').
+  realtime.on('javarunner-sync', (data) => {
+    if (!data || data.senderRole !== 'mentor') return
+    if (isClassEnded.value) return
+    const step = Number(data.stepNumber || 0)
+    if (props.isMentor) {
+      // Mentor side: cache latest payload so state-sync can carry it to late joiners
+      const entry = {
+        code: data.code ?? '',
+        language: data.language ?? 'java',
+        fileName: data.fileName ?? 'Main.java',
+        runOutput: data.runOutput ?? null,
+        runStatus: data.runStatus ?? null,
+        executionTime: data.executionTime ?? null,
+        version: data.version ?? 0,
+        receivedAt: Date.now()
+      }
+      javarunnerLatestByStep.value = {
+        ...javarunnerLatestByStep.value,
+        [step]: entry
+      }
+    }
+    // Student side: handled inside JavaRunner.vue (mode='watch') directly
+  })
+
   if (!props.isMentor) {
     // Announce presence right away over BroadcastChannel/localStorage & REST trigger
     // so page reloads cancel Mentor's disconnect timer before Pusher finishes connecting.
@@ -2054,6 +2120,20 @@ watch(
   { immediate: true }
 )
 
+// ── Computed: is the active step a JavaRunner-type step? ──────────────────────
+const isJavaRunnerStep = computed(() => {
+  if (props.isMentor) return false
+  const meta = activeStepMeta.value
+  return Boolean(meta && meta.tagName && meta.tagName.toLowerCase() === 'javarunner')
+})
+
+// Current JavaRunner state for student view (keyed by stepNumber = stepIndex + 1)
+const currentJavaRunnerState = computed(() => {
+  if (!isJavaRunnerStep.value) return null
+  const stepNum = currentStepIndex.value + 1
+  return javarunnerStateByStep.value[stepNum] || null
+})
+
 watch(
   [
     mirrorWrapperRef,
@@ -2063,6 +2143,8 @@ watch(
   ],
   ([el, idx, mirrored, snapshot]) => {
     if (!el || !mirrored) return
+
+    // Default: DOM mirror path for all non-JavaRunner view steps
     if (snapshot && snapshot.stepIndex === idx) {
       if (retrySyncTimer) {
         clearTimeout(retrySyncTimer)
@@ -2498,6 +2580,12 @@ defineExpose({
 
 .student-floating-hand {
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: calc(24px + env(safe-area-inset-right, 0px));
+}
+
+/* JavaRunner step: raise hand button above the status bar (~26px) */
+.student-floating-hand-jr {
+  bottom: calc(54px + env(safe-area-inset-bottom, 0px));
   right: calc(24px + env(safe-area-inset-right, 0px));
 }
 

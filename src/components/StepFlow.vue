@@ -327,11 +327,41 @@ export default defineComponent({
         )
       }
 
-      // 5. On student view steps (!isMcq), render PracticeHost if practice is unlocked, otherwise wait for mirror
+      // 5. On student view steps (!isMcq), render PracticeHost or JavaRunner with mode prop;
+      //    for all other non-MCQ view steps, return null and let ClassRoom mirror the DOM.
       if (!isMentor.value && !activeStep.isMcq) {
         const isPracticeUnlocked = Boolean(
           activeStep.isPractice && host?.practiceUnlockedByStep?.value?.[activeStep.index]
         )
+
+        // Detect JavaRunner steps by tag name
+        const isJavaRunnerStep = Boolean(
+          activeStep.tagName &&
+          activeStep.tagName.toLowerCase() === 'javarunner'
+        )
+
+        if (isJavaRunnerStep) {
+          // JavaRunner is always rendered for students — mode determines behavior.
+          // watch: inert controls, receives sync from mentor
+          // practice: fully interactive, never publishes (only when practice unlocked)
+          const mode = (activeStep.isPractice && isPracticeUnlocked) ? 'practice' : 'watch'
+          const tagProps = omitInternalProps(activeStep.vnode.props)
+          const matchedHostProps = filterDeclaredProps(activeStep.vnode.type, {
+            isMentor: false,
+            isClassLive: Boolean(host?.isClassLive?.value),
+            isClassEnded: Boolean(host?.isClassEnded?.value),
+            roomCode: host?.roomCode?.value || '',
+            stepNumber: activeStep.index + 1,
+            totalSteps: totalTagSteps
+          })
+          return h(activeStep.vnode.type, {
+            ...matchedHostProps,
+            ...tagProps,
+            mode,
+            key: `jr-student-${mode}-${activeStep.index}`
+          })
+        }
+
         if (activeStep.isPractice && isPracticeUnlocked) {
           const tagProps = omitInternalProps(activeStep.vnode.props)
           return h(PracticeHost, {

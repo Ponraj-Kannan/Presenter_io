@@ -4,6 +4,7 @@
     <StepImage2 />
     <StepImage3 />
     <ContainsDuplicateII practice />
+    <JavaRunner practice />
     <Question1 mcq />
     <Question2 mcq />
     <Question3 mcq />
